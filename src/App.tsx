@@ -104,6 +104,36 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function renderMessageContent(text: string, role: ChatMessage["role"]) {
+  if (role !== "assistant") {
+    return <p>{text}</p>;
+  }
+
+  const lines = text.split("\n");
+  const sourceIndex = lines.findIndex((line) => line.trim().startsWith("출처:"));
+
+  if (sourceIndex === -1) {
+    return <p>{text}</p>;
+  }
+
+  const beforeSource = lines.slice(0, sourceIndex).join("\n").trimEnd();
+  const sourceLine = lines[sourceIndex].replace(/^출처:\s*/, "").trim();
+  const afterSource = lines.slice(sourceIndex + 1).join("\n").trim();
+
+  return (
+    <>
+      {beforeSource && <p>{beforeSource}</p>}
+      {sourceLine && (
+        <aside className="message-source-note" aria-label="답변 출처">
+          <span>출처</span>
+          <strong>{sourceLine}</strong>
+        </aside>
+      )}
+      {afterSource && <p className="message-related">{afterSource}</p>}
+    </>
+  );
+}
+
 function bestSnippet(item: FaqItem, query: string) {
   const tokens = tokenize(query);
   const match =
@@ -390,7 +420,7 @@ function App() {
                 {message.role === "assistant" ? <Bot size={17} /> : <MessageSquareText size={17} />}
               </div>
               <div className="message-bubble">
-                <p>{message.text}</p>
+                {renderMessageContent(message.text, message.role)}
                 {message.isStreaming && (
                   <span className="stream-cursor" aria-label="답변 생성 중">
                     |
