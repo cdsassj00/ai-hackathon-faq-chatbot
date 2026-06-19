@@ -7,12 +7,15 @@ import {
   FileSearch,
   Gauge,
   Github,
+  Info,
   Layers3,
   Loader2,
+  Menu,
   MessageSquareText,
   Search,
   Send,
   Sparkles,
+  X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage, FaqIndex, FaqItem } from "./types";
@@ -183,6 +186,8 @@ function App() {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [activeSection, setActiveSection] = useState("전체");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "intro",
@@ -326,8 +331,11 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar" aria-label="인덱스 메타데이터와 섹션 필터">
+    <main className={`app-shell ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
+      <aside
+        className={`sidebar ${isSidebarOpen ? "open" : "collapsed"}`}
+        aria-label="인덱스 메타데이터와 섹션 필터"
+      >
         <div className="brand-block">
           <div className="brand-mark">
             <Bot size={22} />
@@ -336,61 +344,72 @@ function App() {
             <h1>AI 해커톤 FAQ 챗봇</h1>
             <p>Fuse.js 정적 검색</p>
           </div>
+          <button
+            className="sidebar-toggle"
+            type="button"
+            onClick={() => setIsSidebarOpen((current) => !current)}
+            aria-expanded={isSidebarOpen}
+            aria-label={isSidebarOpen ? "사이드바 접기" : "사이드바 열기"}
+          >
+            {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
 
-        <section className="status-panel">
-          <div className="panel-title">
-            <Database size={16} />
-            인덱스 상태
-          </div>
-          <dl className="metric-grid">
-            <div>
-              <dt>FAQ</dt>
-              <dd>{indexData.metadata.faqCount}</dd>
+        <div className="sidebar-content">
+          <section className="status-panel">
+            <div className="panel-title">
+              <Database size={16} />
+              인덱스 상태
             </div>
-            <div>
-              <dt>단락</dt>
-              <dd>{indexData.metadata.paragraphCount}</dd>
+            <dl className="metric-grid">
+              <div>
+                <dt>FAQ</dt>
+                <dd>{indexData.metadata.faqCount}</dd>
+              </div>
+              <div>
+                <dt>단락</dt>
+                <dd>{indexData.metadata.paragraphCount}</dd>
+              </div>
+            </dl>
+            <div className="source-line">
+              <span>원본</span>
+              <strong>{indexData.metadata.sourceFile}</strong>
             </div>
-          </dl>
-          <div className="source-line">
-            <span>원본</span>
-            <strong>{indexData.metadata.sourceFile}</strong>
-          </div>
-          <div className="source-line">
-            <span>문서 수정</span>
-            <strong>{compactDate(indexData.metadata.generatedAt)}</strong>
-          </div>
-        </section>
+            <div className="source-line">
+              <span>문서 수정</span>
+              <strong>{compactDate(indexData.metadata.generatedAt)}</strong>
+            </div>
+          </section>
 
-        <section className="filter-panel">
-          <div className="panel-title">
-            <Layers3 size={16} />
-            섹션
-          </div>
-          <button
-            className={activeSection === "전체" ? "section-button active" : "section-button"}
-            onClick={() => setActiveSection("전체")}
-          >
-            <span>전체</span>
-            <strong>{indexData.metadata.faqCount}</strong>
-          </button>
-          {indexData.sections.map((section) => (
+          <section className="filter-panel">
+            <div className="panel-title">
+              <Layers3 size={16} />
+              섹션
+            </div>
             <button
-              key={section.name}
-              className={activeSection === section.name ? "section-button active" : "section-button"}
-              onClick={() => setActiveSection(section.name)}
+              className={activeSection === "전체" ? "section-button active" : "section-button"}
+              onClick={() => setActiveSection("전체")}
             >
-              <span>{section.name.replace(/^\d+\.\s*/, "")}</span>
-              <strong>{section.count}</strong>
+              <span>전체</span>
+              <strong>{indexData.metadata.faqCount}</strong>
             </button>
-          ))}
-        </section>
+            {indexData.sections.map((section) => (
+              <button
+                key={section.name}
+                className={activeSection === section.name ? "section-button active" : "section-button"}
+                onClick={() => setActiveSection(section.name)}
+              >
+                <span>{section.name.replace(/^\d+\.\s*/, "")}</span>
+                <strong>{section.count}</strong>
+              </button>
+            ))}
+          </section>
 
-        <a className="repo-link" href="https://pages.github.com/" target="_blank" rel="noreferrer">
-          <Github size={16} />
-          GitHub Pages 배포형
-        </a>
+          <a className="repo-link" href="https://pages.github.com/" target="_blank" rel="noreferrer">
+            <Github size={16} />
+            GitHub Pages 배포형
+          </a>
+        </div>
       </aside>
 
       <section className="chat-pane" aria-label="FAQ 챗봇">
@@ -404,6 +423,75 @@ function App() {
             {indexData.metadata.searchEngine}
           </div>
         </header>
+
+        <section className={`event-guide ${isGuideOpen ? "open" : ""}`} aria-labelledby="event-guide-title">
+          <div className="event-guide-head">
+            <div className="event-guide-title">
+              <Info size={17} />
+              <div>
+                <h3 id="event-guide-title">대회 취지와 주제 안내</h3>
+                <p>
+                  당일 공개되는 시제에 따라 AI와 개발 도구로 실제 작동하는 대국민 서비스를 만드는 해커톤입니다.
+                </p>
+              </div>
+            </div>
+            <button
+              className="event-guide-toggle"
+              type="button"
+              onClick={() => setIsGuideOpen((current) => !current)}
+              aria-expanded={isGuideOpen}
+            >
+              {isGuideOpen ? "접기" : "전문 보기"}
+            </button>
+          </div>
+
+          {isGuideOpen ? (
+            <div className="event-guide-body">
+              <p>
+                2026년 AI챔피언 해커톤은 사전에 완성한 결과물을 제출하는 공모전이 아니라, 대회 당일 공개되는
+                시제에 따라 제한된 시간 안에 문제를 정의하고, AI와 개발 도구를 활용하여 실제 작동하는 대국민
+                서비스를 제작하는 해커톤입니다.
+              </p>
+              <p>이번 대회의 큰 분야는 <strong>복지혜택</strong>과 <strong>생활안전</strong>입니다.</p>
+              <p>
+                복지혜택 분야는 국민이 자신에게 필요한 지원, 제도, 서비스, 신청 절차 등을 더 쉽게 찾고 이해할 수
+                있도록 돕는 서비스를 대상으로 합니다.
+              </p>
+              <p>
+                생활안전 분야는 국민이 일상 속 위험, 재난, 사고, 취약지역, 안전시설, 대응 방법 등을 더 쉽게
+                확인하고 행동할 수 있도록 돕는 서비스를 대상으로 합니다.
+              </p>
+              <p>
+                다만 세부 시제와 구체적인 해결 과제는 대회 당일 현장에서 공개됩니다. 따라서 참가자는 복지혜택과
+                생활안전 분야에 대한 기본적인 이해, 공개데이터 탐색, API 사용법, AI 도구 활용법, 배포 방식 등을
+                사전에 익힐 수 있으나, 특정 세부주제를 가정하여 완성형 서비스나 작동 산출물을 미리 제작해 올
+                필요는 없습니다.
+              </p>
+              <p>
+                본 대회에서 중요한 것은 사전에 얼마나 많이 만들어 왔는지가 아니라, 당일 공개된 문제를 얼마나
+                정확히 이해하고, AI와 도구를 활용하여 국민에게 실제로 쓸모 있는 결과물을 만들어내는가입니다.
+              </p>
+              <p>
+                참가자는 사전 연습과 도구 숙련을 자유롭게 할 수 있습니다. 그러나 당일 공개될 시제에 맞춘 완성 코드,
+                작동 가능한 서비스, 주제 맞춤형 프롬프트 체인, 자동화 워크플로우, 데이터 처리 로직 등을 미리 만들어
+                와서 그대로 제출하는 행위는 허용되지 않습니다.
+              </p>
+              <p>
+                <strong>정리하면, 사전 준비는 가능하되 사전 제작물 반입은 제한됩니다.</strong>
+                <br />
+                복지혜택과 생활안전이라는 큰 분야 안에서 준비하되, 세부 문제는 당일 공개되는 시제에 맞춰 현장에서
+                새로 해결해 주시기 바랍니다.
+              </p>
+            </div>
+          ) : (
+            <div className="event-guide-summary" aria-label="안내 핵심 키워드">
+              <span>복지혜택</span>
+              <span>생활안전</span>
+              <span>사전 준비 가능</span>
+              <span>사전 제작물 반입 제한</span>
+            </div>
+          )}
+        </section>
 
         <div className="starter-row" aria-label="예시 질문">
           {starterQuestions.map((item) => (

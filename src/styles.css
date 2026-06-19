@@ -54,10 +54,15 @@ mark {
 
 .app-shell {
   display: grid;
-  grid-template-columns: minmax(260px, 300px) minmax(420px, 1fr) minmax(320px, 410px);
+  grid-template-columns: 76px minmax(520px, 1fr) minmax(320px, 410px);
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
+  transition: grid-template-columns 0.22s ease;
+}
+
+.app-shell.sidebar-open {
+  grid-template-columns: minmax(260px, 300px) minmax(420px, 1fr) minmax(320px, 410px);
 }
 
 .sidebar,
@@ -79,11 +84,36 @@ mark {
   box-shadow: inset -1px 0 0 rgba(15, 118, 110, 0.08);
   padding: 22px;
   scrollbar-width: thin;
+  transition:
+    padding 0.22s ease,
+    background-color 0.22s ease;
+}
+
+.sidebar.collapsed {
+  align-items: center;
+  gap: 16px;
+  overflow: hidden;
+  padding: 18px 12px;
+}
+
+.sidebar-content {
+  display: contents;
+}
+
+.sidebar.collapsed .sidebar-content,
+.sidebar.collapsed .brand-block h1,
+.sidebar.collapsed .brand-block p {
+  display: none;
 }
 
 .brand-block {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.sidebar.collapsed .brand-block {
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -109,6 +139,27 @@ mark {
   font-weight: 760;
   line-height: 1.2;
   letter-spacing: 0;
+}
+
+.sidebar-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-left: auto;
+  border: 1px solid #bfd8d3;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--teal-strong);
+}
+
+.sidebar-toggle:hover {
+  border-color: #8fc9c0;
+  background: #eef9f6;
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  margin-left: 0;
 }
 
 .brand-block p,
@@ -230,7 +281,7 @@ mark {
 
 .chat-pane {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   gap: 14px;
   min-width: 0;
   min-height: 0;
@@ -264,6 +315,104 @@ mark {
   background: #f3fbf9;
   padding: 7px 10px;
   white-space: nowrap;
+}
+
+.event-guide {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #cddfe8;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 10px 22px rgba(31, 41, 51, 0.07);
+  padding: 12px 14px;
+}
+
+.event-guide.open {
+  background: #ffffff;
+}
+
+.event-guide-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.event-guide-title {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.event-guide-title svg {
+  color: var(--teal);
+  margin-top: 2px;
+}
+
+.event-guide-title h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.event-guide-title p {
+  margin: 3px 0 0;
+  color: #4f6070;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.event-guide-toggle {
+  flex: 0 0 auto;
+  min-height: 32px;
+  border: 1px solid #b7d5d0;
+  border-radius: 8px;
+  background: #f2fbf9;
+  color: var(--teal-strong);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.event-guide-body {
+  display: grid;
+  gap: 8px;
+  max-height: 236px;
+  overflow: auto;
+  border-top: 1px solid #e4edf2;
+  padding-top: 10px;
+  scrollbar-width: thin;
+}
+
+.event-guide-body p {
+  margin: 0;
+  color: #344556;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.event-guide-body strong {
+  color: #123f3c;
+  font-weight: 800;
+}
+
+.event-guide-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.event-guide-summary span {
+  min-height: 26px;
+  border: 1px solid #d1e6e2;
+  border-radius: 8px;
+  background: #f3fbf9;
+  color: #315c58;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 680;
 }
 
 .starter-row {
@@ -580,6 +729,10 @@ mark {
     max-height: none;
     min-height: 100vh;
     overflow: visible;
+    grid-template-columns: 76px minmax(420px, 1fr);
+  }
+
+  .app-shell.sidebar-open {
     grid-template-columns: 260px minmax(420px, 1fr);
   }
 
@@ -610,9 +763,31 @@ mark {
     border-bottom: 1px solid var(--border);
   }
 
+  .sidebar.collapsed {
+    align-items: stretch;
+    padding: 14px 18px;
+  }
+
+  .sidebar.collapsed .brand-block {
+    flex-direction: row;
+  }
+
+  .sidebar.collapsed .brand-block h1,
+  .sidebar.collapsed .brand-block p {
+    display: block;
+  }
+
   .chat-pane {
     min-height: 760px;
     overflow: visible;
+  }
+
+  .event-guide-head {
+    flex-direction: column;
+  }
+
+  .event-guide-toggle {
+    width: 100%;
   }
 
   .result-list {
