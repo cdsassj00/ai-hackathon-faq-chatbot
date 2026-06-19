@@ -125,16 +125,145 @@ function renderMessageContent(text: string, role: ChatMessage["role"]) {
 
   return (
     <>
-      {beforeSource && <p>{beforeSource}</p>}
+      {beforeSource && <div className="answer-content">{renderAnswerLines(beforeSource)}</div>}
       {sourceLine && (
         <aside className="message-source-note" aria-label="답변 출처">
           <span>출처</span>
           <strong>{sourceLine}</strong>
         </aside>
       )}
-      {afterSource && <p className="message-related">{afterSource}</p>}
+      {afterSource && renderRelatedLines(afterSource)}
     </>
   );
+}
+
+function renderAnswerLines(text: string) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const nodes = [];
+  let index = 0;
+  let paragraphCount = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+
+    if (/^Q\d+\./.test(line)) {
+      nodes.push(
+        <h3 className="answer-title" key={`title-${index}`}>
+          {line}
+        </h3>,
+      );
+      index += 1;
+      continue;
+    }
+
+    if (line === "핵심 답변") {
+      nodes.push(
+        <div className="answer-section-label" key={`label-${index}`}>
+          핵심 답변
+        </div>,
+      );
+      index += 1;
+      continue;
+    }
+
+    if (isAnswerSubheading(line)) {
+      nodes.push(
+        <h4 className="answer-subheading" key={`subheading-${index}`}>
+          {line}
+        </h4>,
+      );
+      index += 1;
+      continue;
+    }
+
+    if (isKeyValueLine(line)) {
+      const [label, ...valueParts] = line.split(/[:：]/);
+      nodes.push(
+        <div className="answer-key-value" key={`kv-${index}`}>
+          <span>{label.trim()}</span>
+          <strong>{valueParts.join(":").trim()}</strong>
+        </div>,
+      );
+      index += 1;
+      continue;
+    }
+
+    if (isListCandidate(line)) {
+      const items = [];
+      let itemIndex = index;
+      while (itemIndex < lines.length && isListCandidate(lines[itemIndex])) {
+        items.push(lines[itemIndex]);
+        itemIndex += 1;
+      }
+
+      nodes.push(
+        <ul className="answer-list" key={`list-${index}`}>
+          {items.map((item, listIndex) => (
+            <li key={`${index}-${listIndex}-${item}`}>{item}</li>
+          ))}
+        </ul>,
+      );
+      index = itemIndex;
+      continue;
+    }
+
+    paragraphCount += 1;
+    nodes.push(
+      <p className={paragraphCount === 1 ? "answer-lead" : undefined} key={`p-${index}`}>
+        {line}
+      </p>,
+    );
+    index += 1;
+  }
+
+  return nodes;
+}
+
+function renderRelatedLines(text: string) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const title = lines[0]?.replace(/:$/, "");
+  const items = lines.slice(1);
+
+  return (
+    <aside className="message-related" aria-label="관련 FAQ">
+      {title && <span>{title}</span>}
+      {items.length > 0 && (
+        <ul>
+          {items.map((item, itemIndex) => (
+            <li key={`${itemIndex}-${item}`}>{item}</li>
+          ))}
+        </ul>
+      )}
+    </aside>
+  );
+}
+
+function isAnswerSubheading(line: string) {
+  return /^(인정 가능|제한·불인정|허용되는 행위|금지되는 행위|발표 필수 구성|다음 행위는 금지됩니다|정산 증빙|증빙자료)$/.test(
+    line,
+  );
+}
+
+function isKeyValueLine(line: string) {
+  return /^[가-힣A-Za-z0-9 /·()]{2,18}[:：]\s*\S+/.test(line);
+}
+
+function isListCandidate(line: string) {
+  if (isAnswerSubheading(line) || isKeyValueLine(line) || /^Q\d+\./.test(line) || line === "핵심 답변") {
+    return false;
+  }
+
+  if (line.length > 72) {
+    return false;
+  }
+
+  return !/(습니다|합니다|됩니다|입니다|됩니다|있습니다|없습니다|않습니다|어렵습니다|가능합니다|됩니다\.|다\.|요\.)$/.test(line);
 }
 
 function bestSnippet(item: FaqItem, query: string) {
@@ -167,10 +296,9 @@ function buildAnswer(query: string, results: FaqResult[]) {
     .join("\n");
 
   return [
-    `문서 기준으로 가장 가까운 FAQ는 Q${item.questionNumber}입니다.`,
+    `Q${item.questionNumber}. ${item.question}`,
     "",
-    `질문: ${item.question}`,
-    "",
+    "핵심 답변",
     item.answer,
     "",
     `출처: ${item.section} · ${item.paragraphStart}~${item.paragraphEnd} · 일치도 ${confidence(primary, query)}%`,

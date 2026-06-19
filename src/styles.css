@@ -493,6 +493,92 @@ mark {
   line-height: 1.72;
 }
 
+.answer-content {
+  display: grid;
+  gap: 10px;
+}
+
+.answer-title {
+  margin: 0;
+  border-bottom: 1px solid #e2ebf2;
+  color: #172a3d;
+  padding-bottom: 9px;
+  font-size: 17px;
+  font-weight: 820;
+  line-height: 1.45;
+}
+
+.answer-section-label {
+  justify-self: start;
+  border: 1px solid #c3e4de;
+  border-radius: 8px;
+  background: #eef9f6;
+  color: #0b5f59;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.answer-lead {
+  border-left: 3px solid var(--teal);
+  background: #f4fbf9;
+  color: #172a3d;
+  padding: 9px 11px;
+  font-weight: 650;
+}
+
+.answer-subheading {
+  margin: 3px 0 0;
+  color: #0b5f59;
+  font-size: 14px;
+  font-weight: 820;
+  line-height: 1.45;
+}
+
+.answer-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  border: 1px solid #e3edf2;
+  border-radius: 8px;
+  background: #fbfdfe;
+  padding: 10px 12px 10px 30px;
+}
+
+.answer-list li {
+  color: #243648;
+  font-size: 14px;
+  line-height: 1.52;
+  padding-left: 2px;
+}
+
+.answer-list li::marker {
+  color: var(--teal);
+}
+
+.answer-key-value {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid #e1ebf1;
+  border-radius: 8px;
+  background: #fbfdfe;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.answer-key-value span {
+  color: #0b5f59;
+  font-weight: 800;
+}
+
+.answer-key-value strong {
+  color: #26394b;
+  font-weight: 560;
+}
+
 .message-source-note {
   display: grid;
   gap: 4px;
@@ -516,10 +602,31 @@ mark {
 }
 
 .message-related {
-  margin-top: 10px !important;
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  border-top: 1px solid #edf2f6;
   color: #526171;
-  font-size: 13px !important;
-  line-height: 1.55 !important;
+  padding-top: 9px;
+}
+
+.message-related span {
+  color: #627282;
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.message-related ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.message-related li {
+  color: #526171;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .stream-cursor {
