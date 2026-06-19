@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AI FAQ">
+  <rect width="64" height="64" rx="12" fill="#0f766e"/>
+  <path d="M18 23.5A8.5 8.5 0 0 1 26.5 15h11A8.5 8.5 0 0 1 46 23.5v10A8.5 8.5 0 0 1 37.5 42H33l-8.2 6.2A1.8 1.8 0 0 1 22 46.8V42h-3.5A8.5 8.5 0 0 1 10 33.5v-10Z" fill="#fff"/>
+  <circle cx="25" cy="28" r="3" fill="#3f51b5"/>
+  <circle cx="39" cy="28" r="3" fill="#3f51b5"/>
+  <path d="M25 35c3.8 2.2 10.2 2.2 14 0" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M52 18v8M48 22h8" stroke="#d9f3ee" stroke-width="3" stroke-linecap="round"/>
+</svg>
