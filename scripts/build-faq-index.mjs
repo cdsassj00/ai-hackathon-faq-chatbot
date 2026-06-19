@@ -162,6 +162,23 @@ async function extractParagraphs(docxPath) {
     .filter(Boolean);
 }
 
+async function extractCoreTimestamp(docxPath) {
+  const buffer = await readFile(docxPath);
+  const zip = await JSZip.loadAsync(buffer);
+  const coreFile = zip.file("docProps/core.xml");
+
+  if (!coreFile) {
+    return null;
+  }
+
+  const xml = await coreFile.async("text");
+  const dom = new DOMParser().parseFromString(xml, "application/xml");
+  const modified = dom.getElementsByTagName("dcterms:modified").item(0)?.textContent;
+  const created = dom.getElementsByTagName("dcterms:created").item(0)?.textContent;
+
+  return modified || created || null;
+}
+
 function buildFaqs(paragraphs) {
   const faqs = [];
   let current = null;
@@ -243,6 +260,7 @@ function buildSections(faqs) {
 async function main() {
   const docxPath = await findDocx();
   const docxStat = await stat(docxPath);
+  const coreTimestamp = await extractCoreTimestamp(docxPath);
   const paragraphs = await extractParagraphs(docxPath);
   const faqs = buildFaqs(paragraphs);
 
@@ -254,7 +272,7 @@ async function main() {
     metadata: {
       title: "2026 AI챔피언 해커톤 FAQ",
       sourceFile: path.basename(docxPath),
-      generatedAt: docxStat.mtime.toISOString(),
+      generatedAt: coreTimestamp ?? docxStat.mtime.toISOString(),
       indexMode: "static-docx-to-json",
       searchEngine: "Fuse.js",
       faqCount: faqs.length,

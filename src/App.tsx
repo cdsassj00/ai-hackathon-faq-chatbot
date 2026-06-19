@@ -328,7 +328,7 @@ function App() {
             <strong>{indexData.metadata.sourceFile}</strong>
           </div>
           <div className="source-line">
-            <span>생성</span>
+            <span>문서 수정</span>
             <strong>{compactDate(indexData.metadata.generatedAt)}</strong>
           </div>
         </section>
