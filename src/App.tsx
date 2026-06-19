@@ -33,18 +33,19 @@ const introMessage =
   "문서에서 추출한 FAQ 인덱스를 Fuse.js로 검색합니다. 질문을 입력하면 가장 가까운 FAQ와 출처 단락을 근거로 답변을 흘려보내듯 표시합니다.";
 
 const fuseOptions: IFuseOptions<FaqItem> = {
+  findAllMatches: true,
   includeMatches: true,
   includeScore: true,
   ignoreLocation: true,
-  threshold: 0.38,
-  minMatchCharLength: 2,
+  threshold: 0.62,
+  minMatchCharLength: 1,
   keys: [
-    { name: "question", weight: 0.42 },
-    { name: "answer", weight: 0.34 },
-    { name: "paragraphs.text", weight: 0.24 },
+    { name: "question", weight: 0.5 },
+    { name: "answer", weight: 0.28 },
+    { name: "paragraphs.text", weight: 0.22 },
     { name: "section", weight: 0.12 },
-    { name: "tags", weight: 0.1 },
-    { name: "metadataText", weight: 0.08 },
+    { name: "tags", weight: 0.12 },
+    { name: "metadataText", weight: 0.1 },
   ],
 };
 
@@ -88,6 +89,81 @@ function confidence(result: Pick<FaqResult, "item" | "score">, query: string) {
   const scoreComponent = result.score === undefined ? 30 : (1 - Math.min(result.score, 1)) * 30;
 
   return Math.min(99, Math.max(35, Math.round(55 + overlap * 35 + scoreComponent)));
+}
+
+function searchFaqs(query: string, scopedFuse: Fuse<FaqItem>, globalFuse: Fuse<FaqItem>) {
+  const scopedResults = scopedFuse.search(query);
+  const globalResults = globalFuse.search(query);
+
+  if (shouldUseScopedResults(scopedResults, globalResults)) {
+    return scopedResults.slice(0, 7);
+  }
+
+  if (globalResults.length > 0) {
+    return globalResults.slice(0, 7);
+  }
+
+  return tokenFallbackSearch(query, globalFuse.getIndex().docs).slice(0, 7);
+}
+
+function shouldUseScopedResults(scopedResults: FaqResult[], globalResults: FaqResult[]) {
+  if (scopedResults.length === 0) {
+    return false;
+  }
+
+  if (globalResults.length === 0) {
+    return true;
+  }
+
+  const scopedScore = scopedResults[0].score ?? 1;
+  const globalScore = globalResults[0].score ?? 1;
+
+  return scopedScore <= globalScore + 0.08;
+}
+
+function tokenFallbackSearch(query: string, items: readonly FaqItem[]) {
+  const queryTokens = tokenize(query);
+
+  if (queryTokens.length === 0) {
+    return [];
+  }
+
+  return items
+    .map((item, refIndex) => {
+      const haystack = searchableText(item);
+      const matchedTokens = queryTokens.filter((token) => haystack.includes(token));
+      const questionHits = matchedTokens.filter((token) => item.question.toLowerCase().includes(token)).length;
+      const score = 1 - Math.min(0.98, (matchedTokens.length + questionHits * 0.65) / (queryTokens.length + 1.25));
+
+      return {
+        item,
+        refIndex,
+        score,
+        matchedTokens: matchedTokens.length,
+      };
+    })
+    .filter((result) => result.matchedTokens > 0)
+    .sort((a, b) => {
+      if (a.score !== b.score) {
+        return a.score - b.score;
+      }
+
+      return b.matchedTokens - a.matchedTokens;
+    })
+    .map(({ item, refIndex, score }) => ({ item, refIndex, score }) as FaqResult);
+}
+
+function searchableText(item: FaqItem) {
+  return [
+    item.question,
+    item.answer,
+    item.section,
+    item.tags.join(" "),
+    item.metadataText,
+    item.paragraphs.map((paragraph) => paragraph.text).join(" "),
+  ]
+    .join(" ")
+    .toLowerCase();
 }
 
 function highlighted(text: string, query: string) {
@@ -283,9 +359,9 @@ function bestSnippet(item: FaqItem, query: string) {
 function buildAnswer(query: string, results: FaqResult[]) {
   if (!results.length) {
     return [
-      `"${query}"에 대한 직접 일치 FAQ를 찾지 못했습니다.`,
+      `"${query}"와 관련된 FAQ를 찾지 못했습니다.`,
       "",
-      "표현을 조금 바꿔 다시 검색하거나, 왼쪽의 섹션 필터를 전체로 돌려 확인해 주세요.",
+      "핵심어를 한두 개로 줄이거나 다른 표현으로 다시 검색해 주세요.",
     ].join("\n");
   }
 
@@ -362,6 +438,10 @@ function App() {
   }, [activeSection, indexData]);
 
   const fuse = useMemo(() => new Fuse(filteredFaqs, fuseOptions), [filteredFaqs]);
+  const globalFuse = useMemo(
+    () => new Fuse(indexData?.faqs ?? [], fuseOptions),
+    [indexData],
+  );
 
   const liveResults = useMemo(() => {
     const liveQuery = query.trim() || submittedQuery.trim();
@@ -369,8 +449,8 @@ function App() {
       return filteredFaqs.slice(0, 6).map((item) => ({ item, score: 0.4 }) as FaqResult);
     }
 
-    return fuse.search(liveQuery).slice(0, 7);
-  }, [filteredFaqs, fuse, query, submittedQuery]);
+    return searchFaqs(liveQuery, fuse, globalFuse);
+  }, [filteredFaqs, fuse, globalFuse, query, submittedQuery]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -419,7 +499,7 @@ function App() {
     }
 
     const cleanQuery = nextQuery.trim();
-    const results = fuse.search(cleanQuery).slice(0, 7);
+    const results = searchFaqs(cleanQuery, fuse, globalFuse);
 
     setSubmittedQuery(cleanQuery);
     setQuery("");
