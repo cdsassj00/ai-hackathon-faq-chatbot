@@ -21,6 +21,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage, FaqIndex, FaqItem } from "./types";
 
 type FaqResult = FuseResult<FaqItem>;
+type RelatedQuestionHandler = (question: string) => void;
 
 const starterQuestions = [
   "AI 도구는 무엇을 써도 되나요?",
@@ -183,7 +184,12 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function renderMessageContent(text: string, role: ChatMessage["role"]) {
+function renderMessageContent(
+  text: string,
+  role: ChatMessage["role"],
+  onRelatedQuestionClick: RelatedQuestionHandler,
+  relatedButtonsDisabled: boolean,
+) {
   if (role !== "assistant") {
     return <p>{text}</p>;
   }
@@ -208,7 +214,7 @@ function renderMessageContent(text: string, role: ChatMessage["role"]) {
           <strong>{sourceLine}</strong>
         </aside>
       )}
-      {afterSource && renderRelatedLines(afterSource)}
+      {afterSource && renderRelatedLines(afterSource, onRelatedQuestionClick, relatedButtonsDisabled)}
     </>
   );
 }
@@ -298,7 +304,11 @@ function renderAnswerLines(text: string) {
   return nodes;
 }
 
-function renderRelatedLines(text: string) {
+function renderRelatedLines(
+  text: string,
+  onRelatedQuestionClick: RelatedQuestionHandler,
+  relatedButtonsDisabled: boolean,
+) {
   const lines = text
     .split("\n")
     .map((line) => line.trim())
@@ -310,11 +320,27 @@ function renderRelatedLines(text: string) {
     <aside className="message-related" aria-label="관련 FAQ">
       {title && <span>{title}</span>}
       {items.length > 0 && (
-        <ul>
-          {items.map((item, itemIndex) => (
-            <li key={`${itemIndex}-${item}`}>{item}</li>
-          ))}
-        </ul>
+        <div className="message-related-actions">
+          {items.map((item, itemIndex) => {
+            const match = item.match(/^(Q\d+)\.\s*(.+)$/);
+            const questionNumber = match?.[1] ?? "FAQ";
+            const question = match?.[2] ?? item;
+
+            return (
+              <button
+                className="related-question-button"
+                type="button"
+                key={`${itemIndex}-${item}`}
+                onClick={() => onRelatedQuestionClick(question)}
+                disabled={relatedButtonsDisabled}
+              >
+                <span>{questionNumber}</span>
+                <strong>{question}</strong>
+                <ChevronRight size={14} />
+              </button>
+            );
+          })}
+        </div>
       )}
     </aside>
   );
@@ -391,6 +417,7 @@ function App() {
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [activeSection, setActiveSection] = useState("전체");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isResultPaneOpen, setIsResultPaneOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -539,7 +566,11 @@ function App() {
   }
 
   return (
-    <main className={`app-shell ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
+    <main
+      className={`app-shell ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"} ${
+        isResultPaneOpen ? "results-open" : "results-closed"
+      }`}
+    >
       <aside
         className={`sidebar ${isSidebarOpen ? "open" : "collapsed"}`}
         aria-label="인덱스 메타데이터와 섹션 필터"
@@ -716,7 +747,7 @@ function App() {
                 {message.role === "assistant" ? <Bot size={17} /> : <MessageSquareText size={17} />}
               </div>
               <div className="message-bubble">
-                {renderMessageContent(message.text, message.role)}
+                {renderMessageContent(message.text, message.role, runQuestion, Boolean(streamingId))}
                 {message.isStreaming && (
                   <span className="stream-cursor" aria-label="답변 생성 중">
                     |
@@ -744,41 +775,54 @@ function App() {
         </form>
       </section>
 
-      <aside className="result-pane" aria-label="검색 결과와 출처 단락">
-        <header className="result-header">
-          <div>
-            <h2>관련 FAQ</h2>
-            <p>{(query || submittedQuery) ? `"${query || submittedQuery}"` : "상위 FAQ"}</p>
-          </div>
-          <Sparkles size={20} />
-        </header>
+      <aside className={`result-pane ${isResultPaneOpen ? "open" : "collapsed"}`} aria-label="검색 결과와 출처 단락">
+        <button
+          className="result-pane-toggle"
+          type="button"
+          onClick={() => setIsResultPaneOpen((current) => !current)}
+          aria-expanded={isResultPaneOpen}
+          aria-label={isResultPaneOpen ? "관련 FAQ 패널 접기" : "관련 FAQ 패널 열기"}
+        >
+          {isResultPaneOpen ? <X size={17} /> : <Sparkles size={18} />}
+          <span>{isResultPaneOpen ? "접기" : "관련 FAQ"}</span>
+        </button>
 
-        <div className="result-list">
-          {liveResults.length === 0 ? (
-            <div className="empty-results">
-              <FileSearch size={22} />
-              <strong>일치 결과가 없습니다</strong>
-              <span>다른 섹션을 선택하거나 검색어를 조금 바꿔보세요.</span>
+        <div className="result-pane-content">
+          <header className="result-header">
+            <div>
+              <h2>관련 FAQ</h2>
+              <p>{(query || submittedQuery) ? `"${query || submittedQuery}"` : "상위 FAQ"}</p>
             </div>
-          ) : liveResults.map((result) => (
-            <article key={result.item.id} className="result-card">
-              <div className="result-card-head">
-                <span>Q{result.item.questionNumber}</span>
-                <strong>{confidence(result, query || submittedQuery)}%</strong>
+            <Sparkles size={20} />
+          </header>
+
+          <div className="result-list">
+            {liveResults.length === 0 ? (
+              <div className="empty-results">
+                <FileSearch size={22} />
+                <strong>일치 결과가 없습니다</strong>
+                <span>다른 섹션을 선택하거나 검색어를 조금 바꿔보세요.</span>
               </div>
-              <h3>{highlighted(result.item.question, query || submittedQuery)}</h3>
-              <p>{highlighted(bestSnippet(result.item, query || submittedQuery), query || submittedQuery)}</p>
-              <div className="result-meta">
-                <span>{result.item.section}</span>
-                <span>{result.item.paragraphStart}~{result.item.paragraphEnd}</span>
-              </div>
-              <button onClick={() => runQuestion(result.item.question)} disabled={Boolean(streamingId)}>
-                <CheckCircle2 size={15} />
-                이 항목으로 답변
-                <ChevronRight size={15} />
-              </button>
-            </article>
-          ))}
+            ) : liveResults.map((result) => (
+              <article key={result.item.id} className="result-card">
+                <div className="result-card-head">
+                  <span>Q{result.item.questionNumber}</span>
+                  <strong>{confidence(result, query || submittedQuery)}%</strong>
+                </div>
+                <h3>{highlighted(result.item.question, query || submittedQuery)}</h3>
+                <p>{highlighted(bestSnippet(result.item, query || submittedQuery), query || submittedQuery)}</p>
+                <div className="result-meta">
+                  <span>{result.item.section}</span>
+                  <span>{result.item.paragraphStart}~{result.item.paragraphEnd}</span>
+                </div>
+                <button onClick={() => runQuestion(result.item.question)} disabled={Boolean(streamingId)}>
+                  <CheckCircle2 size={15} />
+                  이 항목으로 답변
+                  <ChevronRight size={15} />
+                </button>
+              </article>
+            ))}
+          </div>
         </div>
       </aside>
     </main>

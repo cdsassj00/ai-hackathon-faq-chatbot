@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="FAQ chatbot watermark">
+  <defs>
+    <linearGradient id="wm-a" x1="58" x2="304" y1="56" y2="304" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#3f51b5"/>
+    </linearGradient>
+    <linearGradient id="wm-b" x1="92" x2="265" y1="90" y2="268" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d8279"/>
+      <stop offset="1" stop-color="#4a5ec2"/>
+    </linearGradient>
+  </defs>
+  <circle cx="180" cy="180" r="138" fill="none" stroke="url(#wm-a)" stroke-width="16"/>
+  <path d="M108 126c0-19 15-34 34-34h76c19 0 34 15 34 34v60c0 19-15 34-34 34h-50l-44 34v-34h-2c-19 0-34-15-34-34v-60Z" fill="none" stroke="url(#wm-b)" stroke-linejoin="round" stroke-width="15"/>
+  <path d="M143 146h74M143 176h48" fill="none" stroke="#0f766e" stroke-linecap="round" stroke-width="14"/>
+  <circle cx="236" cy="230" r="32" fill="none" stroke="#3f51b5" stroke-width="14"/>
+  <path d="m260 254 30 30" fill="none" stroke="#3f51b5" stroke-linecap="round" stroke-width="14"/>
+  <path d="M180 70v-26M180 316v-26M70 180H44M316 180h-26" fill="none" stroke="#0f766e" stroke-linecap="round" stroke-width="12"/>
+</svg>
